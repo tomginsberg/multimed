@@ -1,0 +1,12 @@
+wget https://dl.fbaipublicfiles.com/CovidPrognosis/pretrained_models/mimic-chexpert_lr_0.01_bs_128_fd_128_qs_65536.pt
+wget https://dl.fbaipublicfiles.com/CovidPrognosis/pretrained_models/mimic-chexpert_lr_0.1_bs_128_fd_128_qs_65536.pt
+wget https://dl.fbaipublicfiles.com/CovidPrognosis/pretrained_models/mimic-chexpert_lr_1.0_bs_128_fd_128_qs_65536.pt
+wget https://dl.fbaipublicfiles.com/CovidPrognosis/pretrained_models/mimic_lr_0.01_bs_128_fd_128_qs_65536.pt
+wget https://dl.fbaipublicfiles.com/CovidPrognosis/pretrained_models/mimic_lr_0.01_bs_128_fd_256_qs_65536.pt
+wget https://dl.fbaipublicfiles.com/CovidPrognosis/pretrained_models/mimic_lr_0.01_bs_128_fd_64_qs_65536.pt
+wget https://dl.fbaipublicfiles.com/CovidPrognosis/pretrained_models/mimic_lr_0.1_bs_128_fd_128_qs_65536.pt
+wget https://dl.fbaipublicfiles.com/CovidPrognosis/pretrained_models/mimic_lr_0.1_bs_128_fd_256_qs_65536.pt
+wget https://dl.fbaipublicfiles.com/CovidPrognosis/pretrained_models/mimic_lr_0.1_bs_128_fd_64_qs_65536.pt
+wget https://dl.fbaipublicfiles.com/CovidPrognosis/pretrained_models/mimic_lr_1.0_bs_128_fd_128_qs_65536.pt
+wget https://dl.fbaipublicfiles.com/CovidPrognosis/pretrained_models/mimic_lr_1.0_bs_128_fd_256_qs_65536.pt
+wget https://dl.fbaipublicfiles.com/CovidPrognosis/pretrained_models/mimic_lr_1.0_bs_128_fd_64_qs_65536.pt
