@@ -1,0 +1,3 @@
+paths:
+  chexpert: "none"
+  mimic: "/voyager/datasets/physionet.org/files/mimic-cxr-jpg/"
