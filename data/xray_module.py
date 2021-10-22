@@ -13,7 +13,7 @@ import pytorch_lightning as pl
 import torch
 from torch.utils.data import Dataset
 
-from data import BaseDataset, MimicCxrJpgDataset, CheXpertDataset, CombinedXrayDataset
+from data import BaseDataset, MimicCxrJpgDataset, CheXpertDataset, CombinedXrayDataset, MimicPatientPositivePairDataset
 
 
 class TwoImageDataset(Dataset):
@@ -54,6 +54,7 @@ def fetch_dataset(
         transform: Optional[Callable],
         two_image: bool = False,
         label_list="all",
+        **kwargs
 ):
     """Dataset fetcher for config handling."""
 
@@ -68,6 +69,15 @@ def fetch_dataset(
             split=split,
             transform=transform,
             label_list=label_list,
+        )
+    elif dataset_name == "mimic-medaug":
+        assert not isinstance(dataset_dir, list)
+        dataset = MimicPatientPositivePairDataset(
+            directory=dataset_dir,
+            split=split,
+            transform=transform,
+            label_list=label_list,
+            **kwargs
         )
     elif dataset_name == "chexpert":
         assert not isinstance(dataset_dir, list)

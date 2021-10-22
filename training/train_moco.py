@@ -10,6 +10,8 @@ from os.path import basename
 from pathlib import Path
 
 import pytorch_lightning as pl
+from pytorch_lightning.plugins import DDPPlugin
+
 import yaml
 from pytorch_lightning.loggers import WandbLogger
 from random_word import RandomWords
@@ -32,12 +34,15 @@ def build_args(arg_defaults=None):
     tmp = arg_defaults
     arg_defaults = {
         "accelerator": "ddp",
+        "strategy": DDPPlugin(find_unused_parameters=False),
         "max_epochs": 200,
         "gpus": [0, 1],
         "num_workers": 10,
         "batch_size": 256,
         "callbacks": [],
+        "num_sanity_val_steps": 0
     }
+
     if tmp is not None:
         arg_defaults.update(tmp)
 
@@ -73,17 +78,20 @@ def build_args(arg_defaults=None):
     # checkpoints
     # ------------
     checkpoint_dir = Path(args.default_root_dir) / "checkpoints"
+    # find all subdirectories inside checkpoint_dir
     sub_dirs = {basename(str(x)) for x in checkpoint_dir.glob('*')}
+    # make sure the run name does not already exist inside checkpoints
     if args.run_name is not None:
         name = args.run_name
         assert name not in sub_dirs, f'{name} already in {checkpoint_dir}'
     else:
+        # if the run name is none use simple rejection sampling to find a unique random name
         while True:
             rw = RandomWords()
             name = f'{rw.get_random_word()}-{rw.get_random_word()}'
             if name not in sub_dirs:
                 break
-
+    # configure logger with the same name as the checkpoint location
     args.logger = WandbLogger(project='moco', entity='ml4health', name=name)
     checkpoint_dir = checkpoint_dir / name
     if not checkpoint_dir.exists():
@@ -94,11 +102,13 @@ def build_args(arg_defaults=None):
             args.resume_from_checkpoint = str(ckpt_list[-1])
 
     args.callbacks.append(
-        pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir, verbose=True, monitor='train_metrics/loss', mode='min',
-                                     save_last=True, auto_insert_metric_name=False)
+        pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir, verbose=True, monitor='val_metrics/epoch_accuracy',
+                                     mode='max', save_last=True, auto_insert_metric_name=False, save_top_k=1,
+                                     every_n_epochs=25)
     )
-    args.logger.log_hyperparams(args.__dict__)
+    # in practice steps are much longer then the logging time
     args.log_every_n_steps = 1
+    args.logger.log_hyperparams(args.__dict__)
     return args
 
 
