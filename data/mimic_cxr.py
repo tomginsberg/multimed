@@ -59,13 +59,16 @@ class MimicCxrJpgDataset(BaseDataset):
             "ProcedureCodeSequence_CodeMeaning",
             "ViewCodeSequence_CodeMeaning",
             "PatientOrientationCodeSequence_CodeMeaning",
+            "gender",
+            "anchor_age",
+            "ethnicity"
         ]
 
         self.label_csv_path = (
                 self.directory / "2.0.0" / "mimic-cxr-2.0.0-chexpert.csv.gz"
         )
         self.meta_csv_path = (
-                self.directory / "2.0.0" / "mimic-cxr-2.0.0-metadata.csv.gz"
+                self.directory / "2.0.0" / "mimic-cxr-2.0.0-metadata-extra.csv.gz"
         )
         self.split_csv_path = self.directory / "2.0.0" / "mimic-cxr-2.0.0-split.csv.gz"
         if self.split in ("train", "val", "test"):
