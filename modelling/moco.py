@@ -180,6 +180,13 @@ class MoCo(nn.Module):
         # negative logits: NxK
         l_neg = torch.einsum("nc,ck->nk", [q, self.queue.clone().detach()])
 
+        # q = [q1, q2, q3]
+        # k = [k1, k2, k3]
+
+        # l_pos = [[q1 @ k1], [q2 @ k2]...]
+        # l_neg = [[q1 @ queue1, q2 @ queue1, ...], [q1 @ queue2, q2 @ queue2, ...], ...]
+        # logits = [[q1 @ k1, q1 @ queue1, q2 @ queue1, ...], [q2 @ k2, q1 @ queue2, q2 @ queue2, ...], ...]
+
         # logits: Nx(1+K)
         logits = torch.cat([l_pos, l_neg], dim=1)
 

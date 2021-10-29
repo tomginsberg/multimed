@@ -56,11 +56,30 @@ class MoCoModule(pl.LightningModule):
 
         # metrics
         loss_val = self.loss_fn(output, target)
-        self.train_acc(output, target)
+        acc = self.train_acc(output, target)
         self.log("train_metrics/loss", loss_val)
-        self.log("train_metrics/accuracy", self.train_acc, on_step=True, on_epoch=False)
+        self.log("train_metrics/accuracy", acc, on_step=True, on_epoch=False)
 
         return loss_val
+
+    def training_epoch_end(self, outputs):
+        self.log("train_metrics/epoch_accuracy", self.train_acc.compute())
+        self.train_acc.reset()
+
+    def validation_epoch_end(self, outputs):
+        self.log("val_metrics/epoch_accuracy", self.val_acc.compute())
+        self.val_acc.reset()
+
+    def validation_step(self, batch, batch_idx):
+        image0, image1 = batch["image0"], batch["image1"]
+
+        output, target = self(image0, image1)
+
+        # metrics
+        loss_val = self.loss_fn(output, target)
+        acc = self.val_acc(output, target)
+        self.log("val_metrics/loss", loss_val)
+        self.log("val_metrics/accuracy", acc, on_step=True, on_epoch=False)
 
     def configure_optimizers(self):
         optimizer = torch.optim.SGD(

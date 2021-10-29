@@ -141,22 +141,24 @@ class MimicCxrJpgDataset(BaseDataset):
 
         return length
 
-    def __getitem__(self, idx: int) -> Dict:
-        assert self.csv is not None
-        exam = self.csv.iloc[idx]
-
+    def get_filename(self, exam):
+        filename = self.directory / "2.0.0" / "files"
         subject_id = str(exam["subject_id"])
         study_id = str(exam["study_id"])
         dicom_id = str(exam["dicom_id"])
-
-        filename = self.directory / "2.0.0" / "files"
-        filename = (
+        return (
                 filename
                 / "p{}".format(subject_id[:2])
                 / "p{}".format(subject_id)
                 / "s{}".format(study_id)
                 / "{}.jpg".format(dicom_id)
         )
+
+    def __getitem__(self, idx: int) -> Dict:
+        assert self.csv is not None
+        exam = self.csv.iloc[idx]
+
+        filename = self.get_filename(exam)
         image = self.open_image(filename)
 
         metadata = self.retrieve_metadata(idx, filename, exam)
