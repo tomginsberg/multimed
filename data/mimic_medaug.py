@@ -87,6 +87,7 @@ class MimicPatientPositivePairDataset(MimicCxrJpgDataset):
             key_exam = exam
             key_image = query_image
 
+        # TODO: add disease
         meta_info = {
             "id": [key_exam.subject_id, subject_id],
             "study": [key_exam.study_id, study_id],

@@ -18,6 +18,7 @@ class MoCo(nn.Module):
             self,
             encoder_q: nn.Module,
             encoder_k: nn.Module,
+            meta_keys: list,
             dim: int = 128,
             K: int = 65536,
             m: float = 0.999,
@@ -25,6 +26,7 @@ class MoCo(nn.Module):
             mlp: bool = False,
     ):
         """
+        meta_keys: list of metadata used in negative/positive strategies, e.g., `study`, `lat`, etc.
         dim: feature dimension (default: 128)
         K: queue size; number of negative keys (default: 65536)
         m: moco momentum of updating key encoder (default: 0.999)
@@ -71,6 +73,13 @@ class MoCo(nn.Module):
         )
         self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long))
 
+        # create the meta_info queue
+        self.meta_keys = meta_keys
+        self.queue_meta = dict()
+        for meta in self.meta_keys:
+            self.register_buffer("queue_" + meta, -1 * torch.ones(K))
+            self.queue_meta[meta] = getattr(self, "queue_" + meta)
+
     @torch.no_grad()
     def _momentum_update_key_encoder(self):
         """
@@ -82,9 +91,14 @@ class MoCo(nn.Module):
             param_k.data = param_k.data * self.m + param_q.data * (1.0 - self.m)
 
     @torch.no_grad()
-    def _dequeue_and_enqueue(self, keys: Tensor):
+    def _dequeue_and_enqueue(self, keys: Tensor, meta_info):
         # gather keys before updating queue
         keys = concat_all_gather(keys)
+        # gather meta_info
+        key_metas = {}
+        for meta in self.meta_keys:
+            tmp, _ = meta_info[meta]
+            key_metas[meta] = concat_all_gather(tmp)
 
         batch_size = keys.shape[0]
 
@@ -96,6 +110,9 @@ class MoCo(nn.Module):
 
         # replace the keys at ptr (dequeue and enqueue)
         self.queue[:, ptr: ptr + batch_size] = keys.T
+        for meta in self.meta_keys:
+            self.queue_meta[meta][ptr:ptr + batch_size] = key_metas[meta]
+
         ptr = (ptr + batch_size) % self.K  # move pointer
 
         self.queue_ptr[0] = ptr
@@ -147,7 +164,7 @@ class MoCo(nn.Module):
 
         return x_gather[idx_this]
 
-    def forward(self, im_q: Tensor, im_k: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, im_q: Tensor, im_k: Tensor, meta_info) -> Tuple[Tensor, Tensor]:
         """
         Input:
             im_q: a batch of query images
@@ -179,6 +196,7 @@ class MoCo(nn.Module):
         l_pos = torch.einsum("nc,nc->n", [q, k]).unsqueeze(-1)
         # negative logits: NxK
         l_neg = torch.einsum("nc,ck->nk", [q, self.queue.clone().detach()])
+        l_neg = self.get_negative_samples(l_neg, meta_info)
 
         # q = [q1, q2, q3]
         # k = [k1, k2, k3]
@@ -200,6 +218,32 @@ class MoCo(nn.Module):
         self._dequeue_and_enqueue(k)
 
         return logits, labels
+
+    @ torch.no_grad()
+    def get_negative_samples(self, neg_logits, meta_info):
+        """
+        Input:
+            meta_info (dict)
+        Output:
+            all the negative samples (Tensor)
+        """
+
+        # first strategy: based on disease
+        _, query_disease = meta_info['disease']
+        _, query_id = meta_info['id']
+
+        # [[q1 @ key1, q1 @ key2, ...], [q2 @ key1, q2 @ key2, ...], ...] (N * K)
+        same_disease = query_disease.unsqueeze(1) == self.queue_meta['disease'].unsqueeze(0)
+        diff_id = query_id.unsqueeze(1) != self.queue_meta['id'].unsqueeze(0)
+
+        hard_neg = diff_id & same_disease
+        easy_neg = diff_id & torch.logical_not(same_disease)
+
+        hard_weight, easy_weight = torch.tensor([1]), torch.tensor([0])
+        neg_logits[hard_neg] += torch.log(hard_weight)
+        neg_logits[easy_neg] += torch.log(easy_weight)
+
+        return neg_logits
 
 
 # utils
