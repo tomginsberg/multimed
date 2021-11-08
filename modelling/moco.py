@@ -239,7 +239,9 @@ class MoCo(nn.Module):
         hard_neg = diff_id & same_disease
         easy_neg = diff_id & torch.logical_not(same_disease)
 
-        hard_weight, easy_weight = torch.tensor([1]), torch.tensor([0])
+        # exp(pos_logit) / sum w_i * exp(neg_logits)
+        # exp(logit) / 0.15  = exp(logits - log(0.15))
+        hard_weight, easy_weight = torch.tensor([0.15]), torch.tensor([0])
         neg_logits[hard_neg] += torch.log(hard_weight)
         neg_logits[easy_neg] += torch.log(easy_weight)
 
