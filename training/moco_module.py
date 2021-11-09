@@ -27,6 +27,7 @@ class MoCoModule(pl.LightningModule):
             epochs=1,
     ):
         super().__init__()
+        self.save_hyperparameters()
 
         self.learning_rate = learning_rate
         self.momentum = momentum
@@ -52,7 +53,7 @@ class MoCoModule(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         image0, image1 = batch["image0"], batch["image1"]
 
-        output, target = self(image0, image1)
+        output, target = self(image0, image1, labels=batch['labels'], metainfo=batch['metadata'])
 
         # metrics
         loss_val = self.loss_fn(output, target)

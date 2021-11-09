@@ -1,9 +1,12 @@
-import os
-import random
-from typing import Union, Optional, Callable, List
+"""
+Code adapted from https://github.com/stanfordmlgroup/MedAug/blob/main/moco/aihc_utils/custom_datasets.py
 
-import pandas as pd
-from PIL import Image
+This source code is licensed under the MIT license found in the
+LICENSE file in the root directory of this source tree.
+"""
+import os
+from argparse import ArgumentParser
+from typing import Union, Optional, Callable, List
 
 from data.mimic_cxr import MimicCxrJpgDataset
 
@@ -15,11 +18,12 @@ class MimicPatientPositivePairDataset(MimicCxrJpgDataset):
                  label_list: Union[str, List[str]] = "all",
                  subselect: Optional[str] = None,
                  transform: Optional[Callable] = None,
-                 same_patient=True, same_study=False,
+                 same_patient=True,
+                 same_study=False,
                  diff_study=False,
                  same_laterality=False,
                  diff_laterality=False,
-                 same_disease=False,
+                 # same_disease=False | not implemented
                  **kwargs):
         """
         Args:
@@ -45,6 +49,8 @@ class MimicPatientPositivePairDataset(MimicCxrJpgDataset):
         self.diff_study = diff_study
         self.same_laterality = same_laterality
         self.diff_laterality = diff_laterality
+        assert not (same_laterality and diff_laterality)
+        assert not (same_study and diff_study)
         # self.same_disease = same_disease
 
     def __getitem__(self, idx):
@@ -55,22 +61,18 @@ class MimicPatientPositivePairDataset(MimicCxrJpgDataset):
         view = exam.view
 
         filename = self.get_filename(exam)
-        # curr_disease = self.csv.at[idx, 'disease']
-        # csv_cpy = self.csv.copy()
 
         if self.same_patient:
             poss_key_paths = self.csv[self.csv['subject_id'] == subject_id]
 
             if self.same_study:
-                poss_key_paths = poss_key_paths.loc[poss_key_paths['study_id'] == study_id]
+                poss_key_paths = poss_key_paths[poss_key_paths['study_id'] == study_id]
             if self.diff_study:
-                poss_key_paths = poss_key_paths.loc[poss_key_paths['study_id'] != study_id]
+                poss_key_paths = poss_key_paths[poss_key_paths['study_id'] != study_id]
             if self.same_laterality:
-                poss_key_paths = poss_key_paths.loc[poss_key_paths['view']
-                                                    == view]
+                poss_key_paths = poss_key_paths[poss_key_paths['view'] == view]
             if self.diff_laterality:
-                poss_key_paths = poss_key_paths.loc[poss_key_paths['view']
-                                                    != view]
+                poss_key_paths = poss_key_paths[poss_key_paths['view'] != view]
             # if self.same_disease:
             #     poss_key_paths = poss_key_paths.loc[poss_key_paths['disease']
             #                                         == curr_disease]
@@ -80,10 +82,10 @@ class MimicPatientPositivePairDataset(MimicCxrJpgDataset):
 
         query_image = self.open_image(filename)
 
-        try:
-            key_exam = poss_key_paths.sample()
+        if len(poss_key_paths) > 0:
+            key_exam = poss_key_paths.sample().iloc[0]
             key_image = self.open_image(self.get_filename(key_exam))
-        except:
+        else:
             key_exam = exam
             key_image = query_image
 
@@ -95,12 +97,27 @@ class MimicPatientPositivePairDataset(MimicCxrJpgDataset):
         }
 
         if self.transform is not None:
-            pos_pair = [self.transform(
-                {'image': key_image}), self.transform({'image': query_image})]
+            pos_pair = [self.transform({'image': key_image})['image'], self.transform({'image': query_image})['image']]
         else:
             pos_pair = [key_image, query_image]
 
-        return pos_pair, meta_info, idx
+        sample = {
+            "image0": pos_pair[0],
+            "image1": pos_pair[1]
+        }
+
+        return sample
+
+    @staticmethod
+    def add_model_specific_args(parent_parser):
+        parser = ArgumentParser(parents=[parent_parser], add_help=False)
+
+        parser.add_argument("--same_patient", default=True, type=bool)
+        parser.add_argument("--diff_study", default=False, type=bool, action='store_true')
+        parser.add_argument("--same_laterality", default=False, type=bool, action='store_true')
+        parser.add_argument("--diff_laterality", default=False, type=bool, action='store_true')
+
+        return parser
 
 
 def view_to_int(view):
@@ -109,3 +126,20 @@ def view_to_int(view):
     elif view == "lateral":
         return 1
     return -1
+
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+
+    d = MimicPatientPositivePairDataset('/voyager/datasets/physionet.org/files/mimic-cxr-jpg/')
+
+
+    def plot_positive_pair(pair_dict):
+        fig, axes = plt.subplots(1, 2)
+        axes = axes.ravel()
+        axes[0].imshow(pair_dict['image0'])
+        axes[1].imshow(pair_dict['image1'])
+        plt.show()
+
+
+    plot_positive_pair(d[20])
