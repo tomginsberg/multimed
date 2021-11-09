@@ -229,11 +229,11 @@ class MoCo(nn.Module):
         """
 
         # first strategy: based on disease
-        _, query_disease = meta_info['disease_vector']
+        _, query_disease = meta_info['disease']
         _, query_id = meta_info['id']
 
         # [[q1 @ key1, q1 @ key2, ...], [q2 @ key1, q2 @ key2, ...], ...] (N * K)
-        same_disease = any(map(lambda x: x[0] == x[1] == 1, zip(query_disease.unsqueeze(1), self.queue_meta['disease_vector'].unsqueeze(0))))
+        same_disease = any(map(lambda x: x[0] == x[1] == 1, zip(query_disease.unsqueeze(1), self.queue_meta['disease'].unsqueeze(0))))
         diff_id = query_id.unsqueeze(1) != self.queue_meta['id'].unsqueeze(0)
 
         hard_neg = diff_id & torch.logical_not(same_disease)

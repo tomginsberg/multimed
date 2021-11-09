@@ -8,6 +8,8 @@ import os
 from argparse import ArgumentParser
 from typing import Union, Optional, Callable, List
 
+import numpy as np
+
 from data.mimic_cxr import MimicCxrJpgDataset
 
 
@@ -89,6 +91,9 @@ class MimicPatientPositivePairDataset(MimicCxrJpgDataset):
             key_exam = exam
             key_image = query_image
 
+        key_labels = np.array(key_exam.reindex(self.label_list)[self.label_list]).astype(np.float)
+        query_labels = np.array(exam.reindex(self.label_list)[self.label_list]).astype(np.float)
+
         # TODO: add disease
         meta_info = {
             "id": [key_exam.subject_id, subject_id],
@@ -102,8 +107,12 @@ class MimicPatientPositivePairDataset(MimicCxrJpgDataset):
             pos_pair = [key_image, query_image]
 
         sample = {
-            "image0": pos_pair[0],
-            "image1": pos_pair[1]
+            "key_image": pos_pair[0],
+            "query_image": pos_pair[1],
+            "key_id": key_exam.subject_id,
+            "query_id": subject_id,
+            "key_labels": key_labels,
+            "query_labels": query_labels
         }
 
         return sample

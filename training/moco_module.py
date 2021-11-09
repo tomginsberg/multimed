@@ -51,9 +51,12 @@ class MoCoModule(pl.LightningModule):
         return self.model(image0, image1)
 
     def training_step(self, batch, batch_idx):
-        image0, image1 = batch["image0"], batch["image1"]
+        im0, im1, id0, id1, lab0, lab1 = batch["key_image"], batch["query_image"],\
+                                         batch["key_id"], batch["query_id"], \
+                                         batch["key_labels"], batch["query_labels"]
 
-        output, target = self(image0, image1, labels=batch['labels'], metainfo=batch['metadata'])
+        meta_info = {'id': (id0, id1), 'disease': (lab0, lab1)}
+        output, target = self(im0, im1, meta_info=meta_info)
 
         # metrics
         loss_val = self.loss_fn(output, target)
