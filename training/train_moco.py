@@ -10,7 +10,7 @@ from os.path import basename
 from pathlib import Path
 
 import pytorch_lightning as pl
-from pytorch_lightning.plugins import DDPPlugin
+from pytorch_lightning.plugins import DDPPlugin, DDPSpawnPlugin
 
 import yaml
 from pytorch_lightning.loggers import WandbLogger
@@ -34,8 +34,7 @@ def build_args(arg_defaults=None):
     tmp = arg_defaults
     arg_defaults = {
         "accelerator": "ddp",
-        "strategy": DDPPlugin(find_unused_parameters=False),
-        "max_epochs": 200,
+        "max_epochs": 300,
         "gpus": [0, 1],
         "num_workers": 10,
         "batch_size": 256,
@@ -65,7 +64,7 @@ def build_args(arg_defaults=None):
         with open(data_config, "r") as f:
             paths = yaml.load(f, Loader=yaml.SafeLoader)["paths"]
 
-        if args.dataset_name == "mimic":
+        if args.dataset_name in {"mimic", "mimic-medaug"}:
             args.dataset_dir = paths["mimic"]
         elif args.dataset_name == "chexpert":
             args.dataset_dir = paths["chexpert"]
@@ -155,6 +154,7 @@ def cli_main(args):
     # training
     # ------------
     trainer = pl.Trainer.from_argparse_args(args)
+    trainer.strategy = DDPPlugin(find_unused_parameters=False)
     trainer.fit(model, datamodule=data_module)
 
 

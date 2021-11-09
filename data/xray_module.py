@@ -6,7 +6,7 @@ LICENSE file in the root directory of this source tree.
 """
 import os
 from argparse import ArgumentParser
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Optional, Union, Dict, Any
 
 import numpy as np
 import pytorch_lightning as pl
@@ -42,6 +42,7 @@ class TwoImageDataset(Dataset):
             "image0": item0["image"],
             "image1": item1["image"],
             "label": item0["labels"],
+            "metadata": item0["metadata"]
         }
 
         return sample
@@ -99,7 +100,8 @@ def fetch_dataset(
     else:
         raise ValueError(f"dataset {dataset_name} not recognized")
 
-    if two_image is True:
+    if two_image is True and dataset_name != 'mimic-medaug':
+        # mimic-medaug is a TwoImageDataset by default
         dataset = TwoImageDataset(dataset)
 
     return dataset
@@ -141,6 +143,7 @@ class XrayDataModule(pl.LightningDataModule):
             train_transform: Optional[Callable] = None,
             val_transform: Optional[Callable] = None,
             test_transform: Optional[Callable] = None,
+            **kwargs
     ):
         super().__init__()
 
@@ -156,6 +159,7 @@ class XrayDataModule(pl.LightningDataModule):
             train_transform,
             label_list=label_list,
             two_image=use_two_images,
+            **kwargs
         )
         self.val_dataset = fetch_dataset(
             self.dataset_name,
@@ -164,6 +168,7 @@ class XrayDataModule(pl.LightningDataModule):
             val_transform,
             label_list=label_list,
             two_image=use_two_images,
+            **kwargs
         )
         self.test_dataset = fetch_dataset(
             self.dataset_name,
@@ -172,6 +177,7 @@ class XrayDataModule(pl.LightningDataModule):
             test_transform,
             label_list=label_list,
             two_image=use_two_images,
+            **kwargs
         )
 
         if isinstance(self.train_dataset, TwoImageDataset):
