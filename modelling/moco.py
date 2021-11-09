@@ -196,7 +196,7 @@ class MoCo(nn.Module):
         l_pos = torch.einsum("nc,nc->n", [q, k]).unsqueeze(-1)
         # negative logits: NxK
         l_neg = torch.einsum("nc,ck->nk", [q, self.queue.clone().detach()])
-        l_neg = self.get_negative_samples(l_neg, meta_info)
+        l_neg = self.reweight_negative_samples(l_neg, meta_info)
 
         # q = [q1, q2, q3]
         # k = [k1, k2, k3]
@@ -220,7 +220,7 @@ class MoCo(nn.Module):
         return logits, labels
 
     @ torch.no_grad()
-    def get_negative_samples(self, neg_logits, meta_info):
+    def reweight_negative_samples(self, neg_logits, meta_info):
         """
         Input:
             meta_info (dict)
@@ -236,8 +236,8 @@ class MoCo(nn.Module):
         same_disease = query_disease.unsqueeze(1) == self.queue_meta['disease'].unsqueeze(0)
         diff_id = query_id.unsqueeze(1) != self.queue_meta['id'].unsqueeze(0)
 
-        hard_neg = diff_id & same_disease
-        easy_neg = diff_id & torch.logical_not(same_disease)
+        hard_neg = diff_id & torch.logical_not(same_disease)
+        easy_neg = diff_id & same_disease
 
         # exp(pos_logit) / sum w_i * exp(neg_logits)
         # exp(logit) / 0.15  = exp(logits - log(0.15))
