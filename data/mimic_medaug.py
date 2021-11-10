@@ -55,6 +55,11 @@ class MimicPatientPositivePairDataset(MimicCxrJpgDataset):
         assert not (same_study and diff_study)
         # self.same_disease = same_disease
 
+    def get_label(self, exam):
+        labels = np.array(exam.reindex(self.label_list)[self.label_list]).astype(np.float)
+        labels[np.isnan(labels)] = 0
+        return np.dot(labels, 1 << np.arange(labels.size, dtype='int64')[::-1])
+
     def __getitem__(self, idx):
 
         exam = self.csv.iloc[idx]
@@ -91,8 +96,8 @@ class MimicPatientPositivePairDataset(MimicCxrJpgDataset):
             key_exam = exam
             key_image = query_image
 
-        key_labels = np.array(key_exam.reindex(self.label_list)[self.label_list]).astype(np.float)
-        query_labels = np.array(exam.reindex(self.label_list)[self.label_list]).astype(np.float)
+        key_labels = self.get_label(key_exam)
+        query_labels = self.get_label(exam)
 
         # TODO: add disease
         meta_info = {

@@ -47,16 +47,19 @@ class MoCoModule(pl.LightningModule):
         self.train_acc = torchmetrics.Accuracy()
         self.val_acc = torchmetrics.Accuracy()
 
-    def forward(self, image0, image1):
-        return self.model(image0, image1)
+    def forward(self, image0, image1, meta_info):
+        return self.model(image0, image1, meta_info)
 
-    def training_step(self, batch, batch_idx):
-        im0, im1, id0, id1, lab0, lab1 = batch["key_image"], batch["query_image"],\
+    def _get_batch(self, batch):
+        im0, im1, id0, id1, lab0, lab1 = batch["key_image"], batch["query_image"], \
                                          batch["key_id"], batch["query_id"], \
                                          batch["key_labels"], batch["query_labels"]
 
         meta_info = {'id': (id0, id1), 'disease': (lab0, lab1)}
-        output, target = self(im0, im1, meta_info=meta_info)
+        return im0, im1, meta_info
+
+    def training_step(self, batch, batch_idx):
+        output, target = self(*self._get_batch(batch))
 
         # metrics
         loss_val = self.loss_fn(output, target)
@@ -75,9 +78,7 @@ class MoCoModule(pl.LightningModule):
         self.val_acc.reset()
 
     def validation_step(self, batch, batch_idx):
-        image0, image1 = batch["image0"], batch["image1"]
-
-        output, target = self(image0, image1)
+        output, target = self(*self._get_batch(batch))
 
         # metrics
         loss_val = self.loss_fn(output, target)

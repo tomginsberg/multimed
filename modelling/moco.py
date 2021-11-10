@@ -18,7 +18,6 @@ class MoCo(nn.Module):
             self,
             encoder_q: nn.Module,
             encoder_k: nn.Module,
-            meta_keys: list,
             dim: int = 128,
             K: int = 65536,
             m: float = 0.999,
@@ -74,10 +73,11 @@ class MoCo(nn.Module):
         self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long))
 
         # create the meta_info queue
-        self.meta_keys = meta_keys
         self.queue_meta = dict()
+        self.meta_keys = ['disease', 'id']
         for meta in self.meta_keys:
-            self.register_buffer("queue_" + meta, -1 * torch.ones(K))
+            init_val = -1 * torch.ones(K)
+            self.register_buffer("queue_" + meta, init_val)
             self.queue_meta[meta] = getattr(self, "queue_" + meta)
 
     @torch.no_grad()
@@ -233,7 +233,9 @@ class MoCo(nn.Module):
         _, query_id = meta_info['id']
 
         # [[q1 @ key1, q1 @ key2, ...], [q2 @ key1, q2 @ key2, ...], ...] (N * K)
-        same_disease = any(map(lambda x: x[0] == x[1] == 1, zip(query_disease.unsqueeze(1), self.queue_meta['disease'].unsqueeze(0))))
+        same_disease = (query_disease.int().unsqueeze(1) & self.queue_meta['disease'].int().unsqueeze(0)).bool()
+        # same_disease = any(map(lambda x: x[0] == x[1] == 1, zip(query_disease.unsqueeze(1),\
+        # self.queue_meta['disease'].unsqueeze(0))))
         diff_id = query_id.unsqueeze(1) != self.queue_meta['id'].unsqueeze(0)
 
         hard_neg = diff_id & torch.logical_not(same_disease)
