@@ -73,12 +73,10 @@ class MoCo(nn.Module):
         self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long))
 
         # create the meta_info queue
-        self.queue_meta = dict()
         self.meta_keys = ['disease', 'id']
         for meta in self.meta_keys:
             init_val = -1 * torch.ones(K)
             self.register_buffer("queue_" + meta, init_val)
-            self.queue_meta[meta] = getattr(self, "queue_" + meta)
 
     @torch.no_grad()
     def _momentum_update_key_encoder(self):
@@ -110,8 +108,8 @@ class MoCo(nn.Module):
 
         # replace the keys at ptr (dequeue and enqueue)
         self.queue[:, ptr: ptr + batch_size] = keys.T
-        for meta in self.meta_keys:
-            self.queue_meta[meta][ptr:ptr + batch_size] = key_metas[meta]
+        self.queue_disease[ptr:ptr + batch_size] = key_metas['disease']
+        self.queue_id[ptr:ptr + batch_size] = key_metas['id']
 
         ptr = (ptr + batch_size) % self.K  # move pointer
 
@@ -215,7 +213,7 @@ class MoCo(nn.Module):
         labels = torch.zeros(logits.shape[0], dtype=torch.long).cuda()
 
         # dequeue and enqueue
-        self._dequeue_and_enqueue(k)
+        self._dequeue_and_enqueue(k, meta_info)
 
         return logits, labels
 
@@ -233,17 +231,19 @@ class MoCo(nn.Module):
         _, query_id = meta_info['id']
 
         # [[q1 @ key1, q1 @ key2, ...], [q2 @ key1, q2 @ key2, ...], ...] (N * K)
-        same_disease = (query_disease.int().unsqueeze(1) & self.queue_meta['disease'].int().unsqueeze(0)).bool()
+        same_disease = (query_disease.int().unsqueeze(1) & self.queue_disease.int().unsqueeze(0)).bool()
         # same_disease = any(map(lambda x: x[0] == x[1] == 1, zip(query_disease.unsqueeze(1),\
         # self.queue_meta['disease'].unsqueeze(0))))
-        diff_id = query_id.unsqueeze(1) != self.queue_meta['id'].unsqueeze(0)
+        diff_id = query_id.unsqueeze(1) != self.queue_id.unsqueeze(0)
 
         hard_neg = diff_id & torch.logical_not(same_disease)
         easy_neg = diff_id & same_disease
 
         # exp(pos_logit) / sum w_i * exp(neg_logits)
         # exp(logit) / 0.15  = exp(logits - log(0.15))
-        hard_weight, easy_weight = torch.tensor([0.15]), torch.tensor([0])
+        WEIGHT = 0.9
+        hard_weight = self.K * WEIGHT / hard_neg.sum(1).unsqueeze(1).repeat((1, self.K))[hard_neg]
+        easy_weight = self.K * (1 - WEIGHT) / (self.K - hard_neg.sum(1)).unsqueeze(1).repeat((1, self.K))[easy_neg]
         neg_logits[hard_neg] += torch.log(hard_weight)
         neg_logits[easy_neg] += torch.log(easy_weight)
 

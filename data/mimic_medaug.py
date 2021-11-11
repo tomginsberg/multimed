@@ -58,6 +58,7 @@ class MimicPatientPositivePairDataset(MimicCxrJpgDataset):
     def get_label(self, exam):
         labels = np.array(exam.reindex(self.label_list)[self.label_list]).astype(np.float)
         labels[np.isnan(labels)] = 0
+        labels[labels != 1] = 0
         return np.dot(labels, 1 << np.arange(labels.size, dtype='int64')[::-1])
 
     def __getitem__(self, idx):

@@ -33,13 +33,24 @@ def build_args(arg_defaults=None):
     data_config = "configs/data.yaml"
     tmp = arg_defaults
     arg_defaults = {
-        "accelerator": "ddp",
         "max_epochs": 300,
         "gpus": [0, 1],
         "num_workers": 10,
         "batch_size": 256,
         "callbacks": [],
-        "num_sanity_val_steps": 0
+        "num_sanity_val_steps": 0,
+        "label_list": ["Enlarged Cardiomediastinum",
+                        "Cardiomegaly",
+                        # "Lung Opacity",
+                        # "Lung Lesion",
+                        # "Edema",
+                        # "Consolidation",
+                        # "Pneumonia",
+                        # "Atelectasis",
+                        "Pneumothorax",
+                        "Pleural Effusion",
+                        "Pleural Other",
+                        "Fracture"]
     }
 
     if tmp is not None:
@@ -134,6 +145,7 @@ def cli_main(args):
         train_transform=Compose(transform_list),
         val_transform=Compose(transform_list),
         test_transform=Compose(transform_list),
+        label_list=args.label_list
     )
 
     # ------------
@@ -153,8 +165,8 @@ def cli_main(args):
     # ------------
     # training
     # ------------
+    args.strategy = DDPPlugin(find_unused_parameters=False)
     trainer = pl.Trainer.from_argparse_args(args)
-    trainer.strategy = DDPPlugin(find_unused_parameters=False)
     trainer.fit(model, datamodule=data_module)
 
 
