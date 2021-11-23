@@ -108,5 +108,7 @@ class MoCoModule(pl.LightningModule):
         parser.add_argument("--learning_rate", default=1.0, type=float)
         parser.add_argument("--momentum", default=0.9, type=float)
         parser.add_argument("--weight-decay", default=1e-4, type=float)
+        parser.add_argument("--end_to_end", default=True, type=bool)
+        parser.add_argument("--use_pretrained", default=False, type=bool)
 
         return parser

@@ -160,6 +160,8 @@ def cli_main(args):
         momentum=args.momentum,
         weight_decay=args.weight_decay,
         epochs=args.max_epochs,
+        end_to_end=args.end_to_end,
+        use_pretrained=args.use_pretrained,
     )
 
     # ------------

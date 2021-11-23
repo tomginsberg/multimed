@@ -57,6 +57,8 @@ def build_args():
             args.dataset_dir = paths["chexpert"]
         elif args.dataset_name == "mimic-chexpert":
             args.dataset_dir = [paths["chexpert"], paths["mimic"]]
+        elif args.dataset_name == "nih":
+            args.dataset_dir = paths["nih"]
         else:
             raise ValueError("Unrecognized path config.")
     return args
