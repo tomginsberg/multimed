@@ -32,7 +32,7 @@ from finetune_moco import FineTuneModule
 
 def build_args(arg_defaults=None):
     pl.seed_everything(1234)
-    data_config = Path.cwd() / "../../configs/data.yaml"
+    data_config = Path.cwd() / "configs/data.yaml"
     tmp = arg_defaults
     arg_defaults = {
         "accelerator": "ddp",
