@@ -13,8 +13,7 @@ import pytorch_lightning as pl
 import torch
 from torch.utils.data import Dataset
 
-from data import BaseDataset, MimicCxrJpgDataset, CheXpertDataset, CombinedXrayDataset, MimicPatientPositivePairDataset
-
+from data import BaseDataset, MimicCxrJpgDataset, CheXpertDataset, CombinedXrayDataset, MimicPatientPositivePairDataset, NIHChestDataset
 
 class TwoImageDataset(Dataset):
     """
@@ -55,6 +54,7 @@ def fetch_dataset(
         transform: Optional[Callable],
         two_image: bool = False,
         label_list="all",
+        fraction:float = 1.0
         **kwargs
 ):
     """Dataset fetcher for config handling."""
@@ -70,6 +70,7 @@ def fetch_dataset(
             split=split,
             transform=transform,
             label_list=label_list,
+            fraction=fraction,
         )
     elif dataset_name == "mimic-medaug":
         assert not isinstance(dataset_dir, list)
@@ -78,6 +79,7 @@ def fetch_dataset(
             split=split,
             transform=transform,
             label_list=label_list,
+            fraction=fraction,
             **kwargs
         )
     elif dataset_name == "chexpert":
@@ -87,6 +89,7 @@ def fetch_dataset(
             split=split,
             transform=transform,
             label_list=label_list,
+            fraction=fraction,
         )
     elif dataset_name == "mimic-chexpert":
         assert isinstance(dataset_dir, list)
@@ -96,7 +99,20 @@ def fetch_dataset(
             transform_list=[transform, transform],
             label_list=[label_list, label_list],
             split_list=[split, split],
+            fraction=fraction,
         )
+    
+    elif dataset_name == "nih":
+        assert not isinstance(dataset_dir, list)
+        dataset = NIHChestDataset(
+            directory=dataset_dir,
+            split=split,
+            transform=transform,
+            label_list=label_list,
+            resplit=True,
+            fraction=fraction,
+        )
+
     else:
         raise ValueError(f"dataset {dataset_name} not recognized")
 
@@ -130,6 +146,7 @@ class XrayDataModule(pl.LightningDataModule):
         train_transform: Transform for training loop.
         val_transform: Transform for validation loop.
         test_transform: Transform for test loop.
+
     """
 
     def __init__(
@@ -143,6 +160,7 @@ class XrayDataModule(pl.LightningDataModule):
             train_transform: Optional[Callable] = None,
             val_transform: Optional[Callable] = None,
             test_transform: Optional[Callable] = None,
+            fraction: float = 1.0,
             **kwargs
     ):
         super().__init__()
@@ -151,6 +169,7 @@ class XrayDataModule(pl.LightningDataModule):
         self.dataset_dir = dataset_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.fraction = fraction
 
         self.train_dataset = fetch_dataset(
             self.dataset_name,
@@ -159,6 +178,7 @@ class XrayDataModule(pl.LightningDataModule):
             train_transform,
             label_list=label_list,
             two_image=use_two_images,
+            fraction=self.fraction
             **kwargs
         )
         self.val_dataset = fetch_dataset(
@@ -224,5 +244,6 @@ class XrayDataModule(pl.LightningDataModule):
         parser.add_argument("--dataset_dir", default=None, type=str)
         parser.add_argument("--batch_size", default=64, type=int)
         parser.add_argument("--num_workers", default=4, type=int)
+        parser.add_argument("--fraction", default=1.0, type=float)
 
         return parser

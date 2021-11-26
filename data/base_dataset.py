@@ -29,6 +29,7 @@ class BaseDataset(Dataset, ABC):
         label_list: A list of labels for the data loader to extract.
         subselect: Argument to pass to `pandas` subselect.
         transform: A set of data transforms.
+        fraction: One of (1.0, 0.1, 0.001) of the whole training dataset
     """
 
     def __init__(
@@ -39,6 +40,7 @@ class BaseDataset(Dataset, ABC):
             label_list: Union[str, List[str]],
             subselect: Optional[str],
             transform: Optional[Callable],
+            fraction: float = 1.0 
     ):
         self.dataset_name = dataset_name
 
@@ -54,8 +56,11 @@ class BaseDataset(Dataset, ABC):
         self.subselect = subselect
         self.transform = transform
         self.metadata_keys: List[str] = []
+        self.fraction = fraction 
 
     def preproc_csv(self, csv: pd.DataFrame, subselect: str) -> pd.DataFrame:
+        if self.split == "train":
+            csv = csv.sample(fracion=self.fraction) # Get fraction of database for fine-tuning
         if subselect is not None:
             csv = csv.query(subselect)
 

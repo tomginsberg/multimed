@@ -46,9 +46,10 @@ class CheXpertDataset(BaseDataset):
             label_list: Union[str, List[str]] = "all",
             subselect: Optional[str] = None,
             transform: Optional[Callable] = None,
+            fraction: float = 1.0 # Fraction: 0.01, 0.1, 1.0 of the fine-tuning
     ):
         super().__init__(
-            "chexpert_v1", directory, split, label_list, subselect, transform
+            "chexpert_v1", directory, split, label_list, subselect, transform, fraction
         )
 
         if label_list == "all":
@@ -108,6 +109,10 @@ class CheXpertDataset(BaseDataset):
 
     def preproc_csv(self, csv: pd.DataFrame, subselect: Optional[str]) -> pd.DataFrame:
         if csv is not None:
+            # Get the fraction of the database for fine-tuning
+            csv.sample(frac=self.fraction)
+
+
             csv["Patient ID"] = csv["Path"].str.extract(pat="(patient\\d+)")
             csv["view"] = csv["Frontal/Lateral"].str.lower()
 

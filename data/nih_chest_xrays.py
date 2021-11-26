@@ -39,10 +39,10 @@ class NIHChestDataset(BaseDataset):
         resplit: bool = False,
         resplit_seed: int = 2019,
         resplit_ratios: List[float] = [0.7, 0.2, 0.1],
-        fraction: float = 1.0 # Fraction: 0.01, 0.1, 1.0 of the training data
+        fraction: float = 1.0
     ):
         super().__init__(
-            "nih-chest-xrays", directory, split, label_list, subselect, transform
+            "nih-chest-xrays", directory, split, label_list, subselect, transform, fraction
         )
 
         if label_list == "all":
@@ -50,7 +50,6 @@ class NIHChestDataset(BaseDataset):
         else:
             self.label_list = label_list
 
-        self.fraction = fraction
 
         self.metadata_keys = [
             "Image Index",
@@ -127,9 +126,6 @@ class NIHChestDataset(BaseDataset):
 
     def preproc_csv(self, csv: pd.DataFrame, subselect: Optional[str]) -> pd.DataFrame:
         if csv is not None:
-            
-            # Get the fraction of the database
-            csv.sample(frac=self.fraction)
 
             def format_view(s):
                 return "frontal" if s in ("AP", "PA") else None

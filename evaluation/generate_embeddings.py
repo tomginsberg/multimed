@@ -97,11 +97,17 @@ def cli_main(args):
                                             queue_size=args.queue_size,
                                             ).model.encoder_q
 
-    # ------------
-    # training
-    # ------------
+    # ------------------------------
+    # Fine Tuning on Downstream tasks
+    # -----------------------------
+    
+    # End to end fine tuning
+
+
+    # Fine tuning (Linear)
     for batch in data_module.train_dataloader():
-        batch['image'].cuda()
+        images, targets = batch['image'].cuda(), batch['labels'].cuda()
+
 
 
 if __name__ == "__main__":

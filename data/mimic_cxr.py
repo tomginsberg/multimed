@@ -36,9 +36,10 @@ class MimicCxrJpgDataset(BaseDataset):
             label_list: Union[str, List[str]] = "all",
             subselect: Optional[str] = None,
             transform: Optional[Callable] = None,
+            fraction: float = 1.0 
     ):
         super().__init__(
-            "mimic-cxr-jpg", directory, split, label_list, subselect, transform
+            "mimic-cxr-jpg", directory, split, label_list, subselect, transform, fraction
         )
 
         if label_list == "all":
@@ -121,6 +122,7 @@ class MimicCxrJpgDataset(BaseDataset):
 
     def preproc_csv(self, csv: pd.DataFrame, subselect: Optional[str]) -> pd.DataFrame:
         if csv is not None:
+            
 
             def format_view(s):
                 if s in ("AP", "PA", "AP|PA"):
