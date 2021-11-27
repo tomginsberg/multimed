@@ -4,15 +4,13 @@ Copyright (c) Facebook, Inc. and its affiliates.
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
-# Adapted from 
+# Adapted from
 from argparse import ArgumentParser
-from pathlib import Path
 
 import pytorch_lightning as pl
-import requests
 import torch
 import torchvision.models as models
-from tqdm import tqdm
+import torchmetrics
 
 
 def filter_nans(logits, labels):
@@ -96,7 +94,7 @@ class FineTuneModule(pl.LightningModule):
                 
                 # Linear layer fine-tuning if self.linear = True, else end-to-end fine tuning
                 if self.linear:
-                    for param in self.model_parameters:
+                    for param in self.model.parameters():
                         param.requires_grad = False
             
                 self.model.add_module(
@@ -123,10 +121,10 @@ class FineTuneModule(pl.LightningModule):
 
         # metrics
         self.train_acc = torch.nn.ModuleList(
-            [pl.metrics.Accuracy() for _ in val_pathology_list]
+            [torchmetrics.Accuracy() for _ in val_pathology_list]
         )
         self.val_acc = torch.nn.ModuleList(
-            [pl.metrics.Accuracy() for _ in val_pathology_list]
+            [torchmetrics.Accuracy() for _ in val_pathology_list]
         )
 
     def on_epoch_start(self):
@@ -166,7 +164,9 @@ class FineTuneModule(pl.LightningModule):
         for i, path in enumerate(self.val_pathology_list):
             j = self.label_list.index(path)
             logits, labels = filter_nans(output[:, j], target[:, j])
-            self.train_acc[i](logits, labels)
+            if len(logits) == 0:
+                break
+            self.train_acc[i](logits, labels.int())
             self.log(
                 f"train_metrics/accuracy_{path}",
                 self.train_acc[i],
@@ -214,9 +214,9 @@ class FineTuneModule(pl.LightningModule):
             targets = torch.cat(targets)
             print(f"path: {path}, len: {len(logits)}")
 
-            self.val_acc[i](logits, targets)
+            self.val_acc[i](logits, targets.int())
             try:
-                auc_val = pl.metrics.functional.auroc(torch.sigmoid(logits), targets)
+                auc_val = torchmetrics.functional.auroc(torch.sigmoid(logits), targets.int(), pos_label=1)
                 auc_vals.append(auc_val)
             except ValueError:
                 auc_val = 0

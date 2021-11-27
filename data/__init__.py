@@ -3,3 +3,4 @@ from .chexpert import CheXpertDataset
 from .base_dataset import BaseDataset
 from .combined_datasets import CombinedXrayDataset
 from .mimic_medaug import MimicPatientPositivePairDataset
+from .nih_chest_xrays import NIHChestDataset

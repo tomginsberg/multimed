@@ -20,7 +20,7 @@ class CheXpertDataset(BaseDataset):
 
     Args:
         directory: Base directory for data set with subdirectory
-            'CheXpert-v1.0'.
+            'CheXpert-v1.0-small'.
         split: String specifying split.
             options include:
                 'all': Include all splits.
@@ -46,7 +46,8 @@ class CheXpertDataset(BaseDataset):
             label_list: Union[str, List[str]] = "all",
             subselect: Optional[str] = None,
             transform: Optional[Callable] = None,
-            fraction: float = 1.0 # Fraction: 0.01, 0.1, 1.0 of the fine-tuning
+            fraction: float = 1.0,  # Fraction: 0.01, 0.1, 1.0 of the fine-tuning
+            **kwargs
     ):
         super().__init__(
             "chexpert_v1", directory, split, label_list, subselect, transform, fraction
@@ -67,17 +68,17 @@ class CheXpertDataset(BaseDataset):
         ]
 
         if self.split == "train":
-            self.csv_path = self.directory / "CheXpert-v1.0" / "train.csv"
+            self.csv_path = self.directory / "CheXpert-v1.0-small" / "train.csv"
             self.csv = pd.read_csv(self.directory / self.csv_path)
         elif self.split == "val":
-            self.csv_path = self.directory / "CheXpert-v1.0" / "valid.csv"
+            self.csv_path = self.directory / "CheXpert-v1.0-small" / "valid.csv"
             self.csv = pd.read_csv(self.directory / self.csv_path)
         elif self.split == "all":
             self.csv_path = self.directory / "train.csv"
             self.csv = pd.concat(
                 [
-                    pd.read_csv(self.directory / "CheXpert-v1.0" / "train.csv"),
-                    pd.read_csv(self.directory / "CheXpert-v1.0" / "valid.csv"),
+                    pd.read_csv(self.directory / "CheXpert-v1.0-small" / "train.csv"),
+                    pd.read_csv(self.directory / "CheXpert-v1.0-small" / "valid.csv"),
                 ]
             )
         else:
@@ -111,7 +112,6 @@ class CheXpertDataset(BaseDataset):
         if csv is not None:
             # Get the fraction of the database for fine-tuning
             csv.sample(frac=self.fraction)
-
 
             csv["Patient ID"] = csv["Path"].str.extract(pat="(patient\\d+)")
             csv["view"] = csv["Frontal/Lateral"].str.lower()

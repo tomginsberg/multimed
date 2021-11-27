@@ -36,7 +36,7 @@ class MimicCxrJpgDataset(BaseDataset):
             label_list: Union[str, List[str]] = "all",
             subselect: Optional[str] = None,
             transform: Optional[Callable] = None,
-            fraction: float = 1.0 
+            fraction: float = 1.0
     ):
         super().__init__(
             "mimic-cxr-jpg", directory, split, label_list, subselect, transform, fraction

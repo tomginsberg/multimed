@@ -30,16 +30,16 @@ class NIHChestDataset(BaseDataset):
     """
 
     def __init__(
-        self,
-        directory: Union[str, os.PathLike],
-        split: str = "train",
-        label_list: Union[str, List[str]] = "all",
-        subselect: Optional[str] = None,
-        transform: Optional[Callable] = None,
-        resplit: bool = False,
-        resplit_seed: int = 2019,
-        resplit_ratios: List[float] = [0.7, 0.2, 0.1],
-        fraction: float = 1.0
+            self,
+            directory: Union[str, os.PathLike],
+            split: str = "train",
+            label_list: Union[str, List[str]] = "all",
+            subselect: Optional[str] = None,
+            transform: Optional[Callable] = None,
+            resplit: bool = False,
+            resplit_seed: int = 2019,
+            resplit_ratios: List[float] = [0.7, 0.2, 0.1],
+            fraction: float = 1.0
     ):
         super().__init__(
             "nih-chest-xrays", directory, split, label_list, subselect, transform, fraction
@@ -49,7 +49,6 @@ class NIHChestDataset(BaseDataset):
             self.label_list = self.default_labels()
         else:
             self.label_list = label_list
-
 
         self.metadata_keys = [
             "Image Index",
@@ -79,11 +78,11 @@ class NIHChestDataset(BaseDataset):
                 self.csv = pd.concat([grouped.get_group(pat) for pat in patient_list])
             elif self.split == "val":
                 patient_list = patient_list[
-                    rand_inds[train_count : train_count + val_count]
+                    rand_inds[train_count: train_count + val_count]
                 ]
                 self.csv = pd.concat([grouped.get_group(pat) for pat in patient_list])
             elif self.split == "test":
-                patient_list = patient_list[rand_inds[train_count + val_count :]]
+                patient_list = patient_list[rand_inds[train_count + val_count:]]
                 self.csv = pd.concat([grouped.get_group(pat) for pat in patient_list])
             else:
                 logging.warning(

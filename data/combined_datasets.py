@@ -39,8 +39,9 @@ class CombinedXrayDataset(BaseDataset):
                  directory: Union[str, os.PathLike], split: str, subselect: Optional[str],
                  transform: Optional[Callable], dataset_list: Union[str, List[str]] = "all",
                  split_list: Union[str, List[str]] = "train", label_list: Union[str, List[str]] = "all",
-                 subselect_list: Optional[List[str]] = None, transform_list: Optional[List[Optional[Callable]]] = None):
-        super().__init__(dataset_name, directory, split, label_list, subselect, transform)
+                 subselect_list: Optional[List[str]] = None, transform_list: Optional[List[Optional[Callable]]] = None,
+                 fraction: float = 1):
+        super().__init__(dataset_name, directory, split, label_list, subselect, transform, fraction=fraction)
         self.dataset_name = "combined-xray-dataset"
         if dataset_list == "all":
             dataset_list = ["chexpert_v1", "mimic-cxr"]

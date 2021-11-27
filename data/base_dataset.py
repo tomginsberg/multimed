@@ -40,7 +40,8 @@ class BaseDataset(Dataset, ABC):
             label_list: Union[str, List[str]],
             subselect: Optional[str],
             transform: Optional[Callable],
-            fraction: float = 1.0 
+            fraction: float = 1.0,
+            **kwargs
     ):
         self.dataset_name = dataset_name
 
@@ -56,11 +57,11 @@ class BaseDataset(Dataset, ABC):
         self.subselect = subselect
         self.transform = transform
         self.metadata_keys: List[str] = []
-        self.fraction = fraction 
+        self.fraction = fraction
 
     def preproc_csv(self, csv: pd.DataFrame, subselect: str) -> pd.DataFrame:
         if self.split == "train":
-            csv = csv.sample(fracion=self.fraction) # Get fraction of database for fine-tuning
+            csv = csv.sample(fracion=self.fraction)  # Get fraction of database for fine-tuning
         if subselect is not None:
             csv = csv.query(subselect)
 

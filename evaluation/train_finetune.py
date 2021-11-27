@@ -5,8 +5,6 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-
-
 import logging
 import os
 from argparse import ArgumentParser
@@ -17,14 +15,14 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 import yaml
-from covidprognosis.data.transforms import (
+from data.transforms import (
     Compose,
     HistogramNormalize,
     NanToInt,
     RemapLabel,
     TensorToRGB,
 )
-from covidprognosis.plmodules import XrayDataModule
+from data.xray_module import XrayDataModule
 from torchvision import transforms
 
 from finetune_moco import FineTuneModule
@@ -41,7 +39,7 @@ def build_args(arg_defaults=None):
         "gpus": 1,
         "num_workers": 10,
         "callbacks": [],
-        "linear":False
+        "linear": False
     }
     if tmp is not None:
         arg_defaults.update(tmp)

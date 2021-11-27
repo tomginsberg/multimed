@@ -13,7 +13,9 @@ import pytorch_lightning as pl
 import torch
 from torch.utils.data import Dataset
 
-from data import BaseDataset, MimicCxrJpgDataset, CheXpertDataset, CombinedXrayDataset, MimicPatientPositivePairDataset, NIHChestDataset
+from data import BaseDataset, MimicCxrJpgDataset, CheXpertDataset, CombinedXrayDataset, MimicPatientPositivePairDataset, \
+    NIHChestDataset
+
 
 class TwoImageDataset(Dataset):
     """
@@ -54,7 +56,7 @@ def fetch_dataset(
         transform: Optional[Callable],
         two_image: bool = False,
         label_list="all",
-        fraction:float = 1.0
+        fraction: float = 1.0,
         **kwargs
 ):
     """Dataset fetcher for config handling."""
@@ -80,7 +82,6 @@ def fetch_dataset(
             transform=transform,
             label_list=label_list,
             fraction=fraction,
-            **kwargs
         )
     elif dataset_name == "chexpert":
         assert not isinstance(dataset_dir, list)
@@ -99,9 +100,9 @@ def fetch_dataset(
             transform_list=[transform, transform],
             label_list=[label_list, label_list],
             split_list=[split, split],
-            fraction=fraction,
+            fraction=fraction
         )
-    
+
     elif dataset_name == "nih":
         assert not isinstance(dataset_dir, list)
         dataset = NIHChestDataset(
@@ -178,7 +179,7 @@ class XrayDataModule(pl.LightningDataModule):
             train_transform,
             label_list=label_list,
             two_image=use_two_images,
-            fraction=self.fraction
+            fraction=self.fraction,
             **kwargs
         )
         self.val_dataset = fetch_dataset(
