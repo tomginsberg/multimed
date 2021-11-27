@@ -88,6 +88,7 @@ class CheXpertDataset(BaseDataset):
             )
 
         self.csv = self.preproc_csv(self.csv, self.subselect)
+        self.csv = self.filter_csv(self.csv)
 
     @staticmethod
     def default_labels() -> List[str]:

@@ -59,11 +59,9 @@ class BaseDataset(Dataset, ABC):
         self.metadata_keys: List[str] = []
         self.fraction = fraction
 
-    def preproc_csv(self, csv: pd.DataFrame, subselect: str) -> pd.DataFrame:
+    def filter_csv(self, csv: pd.DataFrame) -> pd.DataFrame:
         if self.split == "train":
-            csv = csv.sample(fracion=self.fraction)  # Get fraction of database for fine-tuning
-        if subselect is not None:
-            csv = csv.query(subselect)
+            csv = csv.sample(frac=self.fraction)  # Get fraction of database for fine-tuning
 
         return csv
 

@@ -100,6 +100,7 @@ class MimicCxrJpgDataset(BaseDataset):
             )
 
         self.csv = self.preproc_csv(self.csv, self.subselect)
+        self.csv = self.filter_csv(self.csv)
 
     @staticmethod
     def default_labels() -> List[str]:
@@ -122,7 +123,6 @@ class MimicCxrJpgDataset(BaseDataset):
 
     def preproc_csv(self, csv: pd.DataFrame, subselect: Optional[str]) -> pd.DataFrame:
         if csv is not None:
-            
 
             def format_view(s):
                 if s in ("AP", "PA", "AP|PA"):

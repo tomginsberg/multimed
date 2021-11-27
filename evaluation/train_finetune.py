@@ -10,6 +10,7 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 from warnings import warn
+from pytorch_lightning.loggers import WandbLogger
 
 import numpy as np
 import pytorch_lightning as pl
@@ -39,7 +40,6 @@ def build_args(arg_defaults=None):
         "gpus": 1,
         "num_workers": 10,
         "callbacks": [],
-        "linear": False
     }
     if tmp is not None:
         arg_defaults.update(tmp)
@@ -71,7 +71,7 @@ def build_args(arg_defaults=None):
 
         if args.dataset_name == "nih":
             args.dataset_dir = paths["nih"]
-        if args.dataset_name == "mimic":
+        elif args.dataset_name == "mimic":
             args.dataset_dir = paths["mimic"]
         elif args.dataset_name == "chexpert":
             args.dataset_dir = paths["chexpert"]
@@ -172,6 +172,7 @@ def cli_main(args):
         train_transform=Compose(train_transform_list),
         val_transform=Compose(val_transform_list),
         test_transform=Compose(val_transform_list),
+        fraction=args.fraction
     )
 
     # ------------

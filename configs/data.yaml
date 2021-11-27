@@ -1,4 +1,4 @@
 paths:
   chexpert: "/voyager/datasets/"
   mimic: "/voyager/datasets/physionet.org/files/mimic-cxr-jpg/"
-  nih: "none"
+  nih: "/voyager/datasets/NIH/"

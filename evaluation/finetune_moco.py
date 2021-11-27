@@ -94,6 +94,7 @@ class FineTuneModule(pl.LightningModule):
                 
                 # Linear layer fine-tuning if self.linear = True, else end-to-end fine tuning
                 if self.linear:
+                    self.model.eval()
                     for param in self.model.parameters():
                         param.requires_grad = False
             
@@ -259,5 +260,6 @@ class FineTuneModule(pl.LightningModule):
         parser.add_argument("--val_pathology_list", nargs="+")
         parser.add_argument("--learning_rate", default=1e-2, type=float)
         parser.add_argument("--pos_weights", default=None, type=float)
+        parser.add_argument("--linear", default=False, action='store_true')
 
         return parser
