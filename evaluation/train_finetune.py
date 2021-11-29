@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 import logging
 import os
 from argparse import ArgumentParser
+from os.path import basename
 from pathlib import Path
 from warnings import warn
 from pytorch_lightning.loggers import WandbLogger
@@ -16,6 +17,9 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 import yaml
+from random_word import RandomWords
+import pandas as pd
+
 from data.transforms import (
     Compose,
     HistogramNormalize,
@@ -30,15 +34,14 @@ from finetune_moco import FineTuneModule
 
 
 def build_args(arg_defaults=None):
-    pl.seed_everything(1234)
     data_config = Path.cwd() / "configs/data.yaml"
     tmp = arg_defaults
     arg_defaults = {
         "accelerator": "ddp",
-        "batch_size": 32,
-        "max_epochs": 5,
+        "batch_size": 64,
+        "max_epochs": 50,
         "gpus": 1,
-        "num_workers": 10,
+        "num_workers": 64,
         "callbacks": [],
     }
     if tmp is not None:
@@ -49,8 +52,11 @@ def build_args(arg_defaults=None):
     # ------------
     parser = ArgumentParser()
     parser.add_argument("--im_size", default=224, type=int)
+    parser.add_argument("--run_name", default=None, type=str)
     parser.add_argument("--uncertain_label", default=np.nan, type=float)
     parser.add_argument("--nan_label", default=np.nan, type=float)
+    parser.add_argument('--save_location', type=str, default='')
+    parser.add_argument('--random_seed', type=int, default=1234)
     parser = pl.Trainer.add_argparse_args(parser)
     parser = XrayDataModule.add_model_specific_args(parser)
     parser = FineTuneModule.add_model_specific_args(parser)
@@ -103,6 +109,24 @@ def build_args(arg_defaults=None):
     # checkpoints
     # ------------
     checkpoint_dir = Path(args.default_root_dir) / "checkpoints"
+    # find all subdirectories inside checkpoint_dir
+    sub_dirs = {basename(str(x)) for x in checkpoint_dir.glob('*')}
+    # make sure the run name does not already exist inside checkpoints
+    if args.run_name is not None:
+        name = args.run_name
+        assert name not in sub_dirs, f'{name} already in {checkpoint_dir}'
+    else:
+        # if the run name is none use simple rejection sampling to find a unique random name
+        while True:
+            rw = RandomWords()
+            name = f'{rw.get_random_word()}-{rw.get_random_word()}'
+            if name not in sub_dirs:
+                break
+    args.run_name = name
+
+    # configure logger with the same name as the checkpoint location
+    args.logger = WandbLogger(project='moco', entity='ml4health', name=name)
+    checkpoint_dir = checkpoint_dir / name
     if not checkpoint_dir.exists():
         checkpoint_dir.mkdir(parents=True)
     elif args.resume_from_checkpoint is None:
@@ -206,4 +230,8 @@ def cli_main(args):
 
 if __name__ == "__main__":
     args = build_args()
+    pl.seed_everything(args.random_seed)
+    df = pd.read_json('finetune_results.json')
+    df.append({x: y for x, y in args.__dict__.items() if x not in {'callbacks', 'default_root_dir', 'logger'}},
+              ignore_index=True).to_json('finetune_results.json')
     cli_main(args)

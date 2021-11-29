@@ -50,7 +50,8 @@ class MoCoModule(pl.LightningModule):
     def forward(self, image0, image1, meta_info):
         return self.model(image0, image1, meta_info)
 
-    def _get_batch(self, batch):
+    @staticmethod
+    def _get_batch(batch):
         im0, im1, id0, id1, lab0, lab1 = batch["key_image"], batch["query_image"], \
                                          batch["key_id"], batch["query_id"], \
                                          batch["key_labels"], batch["query_labels"]

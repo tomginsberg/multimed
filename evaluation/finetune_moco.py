@@ -26,7 +26,7 @@ def validate_pretrained_model(state_dict, pretrained_file):
     model_dict = dict()
     for k, v in pretrained_dict.items():
         if "model.encoder_q" in k:
-            model_dict[k[len("model.encoder_q.") :]] = v
+            model_dict[k[len("model.encoder_q."):]] = v
 
     for k in list(model_dict.keys()):
         # only ignore fc layer
@@ -36,21 +36,22 @@ def validate_pretrained_model(state_dict, pretrained_file):
             continue
 
         assert (
-            state_dict[k].cpu() == model_dict[k]
+                state_dict[k].cpu() == model_dict[k]
         ).all(), f"{k} changed in linear classifier training."
+
 
 class FineTuneModule(pl.LightningModule):
     def __init__(
-        self,
-        arch,
-        num_classes,
-        label_list,
-        val_pathology_list,
-        pretrained_file=None,
-        learning_rate=1e-3,
-        pos_weights=None,
-        epochs=5,
-        linear=False
+            self,
+            arch,
+            num_classes,
+            label_list,
+            val_pathology_list,
+            pretrained_file=None,
+            learning_rate=1e-3,
+            pos_weights=None,
+            epochs=5,
+            linear=False
     ):
         super().__init__()
 
@@ -91,13 +92,13 @@ class FineTuneModule(pl.LightningModule):
                 self.model = models.__dict__[arch](num_classes=feature_dim)
                 self.model.load_state_dict(state_dict)
                 del self.model.classifier
-                
+
                 # Linear layer fine-tuning if self.linear = True, else end-to-end fine tuning
                 if self.linear:
                     self.model.eval()
                     for param in self.model.parameters():
                         param.requires_grad = False
-            
+
                 self.model.add_module(
                     "classifier", torch.nn.Linear(in_features, num_classes)
                 )

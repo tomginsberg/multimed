@@ -40,17 +40,17 @@ def build_args(arg_defaults=None):
         "callbacks": [],
         "num_sanity_val_steps": 0,
         "label_list": ["Enlarged Cardiomediastinum",
-                        "Cardiomegaly",
-                        # "Lung Opacity",
-                        # "Lung Lesion",
-                        # "Edema",
-                        # "Consolidation",
-                        # "Pneumonia",
-                        # "Atelectasis",
-                        "Pneumothorax",
-                        "Pleural Effusion",
-                        "Pleural Other",
-                        "Fracture"]
+                       "Cardiomegaly",
+                       # "Lung Opacity",
+                       # "Lung Lesion",
+                       # "Edema",
+                       # "Consolidation",
+                       # "Pneumonia",
+                       # "Atelectasis",
+                       "Pneumothorax",
+                       "Pleural Effusion",
+                       "Pleural Other",
+                       "Fracture"]
     }
 
     if tmp is not None:
