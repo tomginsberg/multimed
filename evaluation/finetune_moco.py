@@ -52,7 +52,8 @@ class FineTuneModule(pl.LightningModule):
             learning_rate=1e-3,
             pos_weights=None,
             epochs=5,
-            linear=False
+            linear=False,
+            extend_embed_size: int = None,
     ):
         super().__init__()
 
@@ -104,9 +105,9 @@ class FineTuneModule(pl.LightningModule):
                     for param in self.model.parameters():
                         param.requires_grad = True
 
-                self.model.add_module(
-                    "classifier", torch.nn.Linear(in_features, num_classes)
-                )
+                # self.model.add_module(
+                #     "classifier", torch.nn.Linear(in_features, num_classes)
+                # )
             elif "model.encoder_q.fc.weight" in pretrained_dict.keys():
                 feature_dim = pretrained_dict["model.encoder_q.fc.weight"].shape[0]
                 in_features = pretrained_dict["model.encoder_q.fc.weight"].shape[1]
@@ -114,9 +115,10 @@ class FineTuneModule(pl.LightningModule):
                 self.model = models.__dict__[arch](num_classes=feature_dim)
                 self.model.load_state_dict(state_dict)
                 del self.model.fc
-                self.model.add_module("fc", torch.nn.Linear(in_features, num_classes))
+                # self.model.add_module("fc", torch.nn.Linear(in_features, num_classes))
             else:
                 raise RuntimeError("Unrecognized classifier.")
+            self.last_linear = torch.nn.Linear(in_features + extend_embed_size, num_classes)
         else:
             self.model = models.__dict__[arch](num_classes=num_classes)
 
@@ -138,8 +140,8 @@ class FineTuneModule(pl.LightningModule):
         if self.pretrained_file is not None:
             self.model.eval()
 
-    def forward(self, image):
-        return self.model(image)
+    def forward(self, image, features):
+        return self.last_linear(torch.cat((self.model(image), features), dim=-1))
 
     def loss(self, output, target):
         counts = 0
@@ -160,7 +162,7 @@ class FineTuneModule(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         # forward pass
-        output = self(batch["image"])
+        output = self(batch["image"], batch['features'])
         target = batch["labels"]
 
         # calculate loss
@@ -185,7 +187,7 @@ class FineTuneModule(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         # forward pass
-        output = self(batch["image"])
+        output = self(batch["image"], batch['features'])
         target = batch["labels"]
 
         # calculate loss

@@ -71,6 +71,12 @@ class MimicCxrJpgDataset(BaseDataset):
         self.meta_csv_path = (
                 self.directory / "2.0.0" / "mimic-cxr-2.0.0-metadata-extra.csv.gz"
         )
+        self.mimic_iv_path = (
+                self.directory / "2.0.0" / "mimic_data.csv"
+        )
+        self.mimic_iv = pd.read_csv(self.mimic_iv_path).set_index(
+            ["subject_id", "study_id"]
+        )
         self.split_csv_path = self.directory / "2.0.0" / "mimic-cxr-2.0.0-split.csv.gz"
         if self.split in ("train", "val", "test"):
             split_csv = pd.read_csv(self.split_csv_path)["split"].str.contains(
@@ -174,8 +180,12 @@ class MimicCxrJpgDataset(BaseDataset):
         labels = np.array(exam.reindex(self.label_list)[self.label_list]).astype(
             np.float
         )
-
-        sample = {"image": image, "labels": labels, "metadata": metadata}
+        try:
+            features = self.mimic_iv.loc[exam['subject_id'], exam['study_id'], :].fillna(0).values[0].astype(np.float)
+        except:
+            features = np.zeros(self.mimic_iv.shape[1]).astype(np.float)
+        # TODO add features
+        sample = {"image": image, "labels": labels, "metadata": metadata, "features": features}
 
         if self.transform is not None:
             sample = self.transform(sample)
