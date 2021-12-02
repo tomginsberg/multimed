@@ -9,9 +9,11 @@ from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 import torch
-import torchvision.models as models
 import torchmetrics
-import adabound
+import torchvision.models as models
+
+# import adabound
+import wandb
 
 
 def filter_nans(logits, labels):
@@ -91,6 +93,7 @@ class FineTuneModule(pl.LightningModule):
                 ].shape[1]
 
                 self.model = models.__dict__[arch](num_classes=feature_dim)
+                # self.model = torchvision.models.densenet121(pretrained=True)
                 self.model.load_state_dict(state_dict)
                 del self.model.classifier
 
@@ -107,6 +110,7 @@ class FineTuneModule(pl.LightningModule):
                 self.model.add_module(
                     "classifier", torch.nn.Linear(in_features, num_classes)
                 )
+
             elif "model.encoder_q.fc.weight" in pretrained_dict.keys():
                 feature_dim = pretrained_dict["model.encoder_q.fc.weight"].shape[0]
                 in_features = pretrained_dict["model.encoder_q.fc.weight"].shape[1]
@@ -132,6 +136,13 @@ class FineTuneModule(pl.LightningModule):
         )
         self.val_acc = torch.nn.ModuleList(
             [torchmetrics.Accuracy() for _ in val_pathology_list]
+        )
+        self.val_conf = torch.nn.ModuleList(
+            [torchmetrics.ConfusionMatrix(num_classes=2) for _ in val_pathology_list]
+        )
+
+        self.val_f1 = torch.nn.ModuleList(
+            [torchmetrics.F1(num_classes=1, average='macro') for _ in val_pathology_list]
         )
 
     def on_epoch_start(self):
@@ -183,6 +194,9 @@ class FineTuneModule(pl.LightningModule):
 
         return loss_val
 
+    def training_epoch_end(self, outputs) -> None:
+        self.train_acc[0].reset()
+
     def validation_step(self, batch, batch_idx):
         # forward pass
         output = self(batch["image"])
@@ -222,6 +236,9 @@ class FineTuneModule(pl.LightningModule):
             print(f"path: {path}, len: {len(logits)}")
 
             self.val_acc[i](logits, targets.int())
+            self.val_conf[i](logits, targets.int())
+            self.val_f1[i].update(logits, targets.int())
+
             try:
                 auc_val = torchmetrics.functional.auroc(torch.sigmoid(logits), targets.int(), pos_label=1)
                 auc_vals.append(auc_val)
@@ -236,7 +253,26 @@ class FineTuneModule(pl.LightningModule):
                 on_step=False,
                 on_epoch=True,
             )
+            self.log(
+                f"val_metrics/f1_{path}",
+                self.val_f1[i],
+                on_step=False,
+                on_epoch=True,
+            )
+            self.val_acc[i].reset()
+            self.val_f1[i].reset()
+
             self.log(f"val_metrics/auc_{path}", auc_val)
+
+            cf = self.val_conf[i].compute()
+            self.val_conf[i].reset()
+            print(cf)
+
+            wandb.log({'val_metrics/cf': wandb.Table(columns=['0', '1'], data=list(cf.cpu()))})
+            # self.log(f"val_metrics/tp_{path}", cf[1, 1].item())
+            # self.log(f"val_metrics/tn_{path}", cf[0, 0].item())
+            # self.log(f"val_metrics/fp_{path}", cf[0, 1].item())
+            # self.log(f"val_metrics/fn_{path}", cf[1, 0].item())
 
         self.log("val_metrics/auc_mean", sum(auc_vals) / len(auc_vals))
 
