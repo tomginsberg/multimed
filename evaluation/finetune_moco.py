@@ -11,6 +11,7 @@ import pytorch_lightning as pl
 import torch
 import torchvision.models as models
 import torchmetrics
+import adabound
 
 
 def filter_nans(logits, labels):
@@ -98,6 +99,10 @@ class FineTuneModule(pl.LightningModule):
                     self.model.eval()
                     for param in self.model.parameters():
                         param.requires_grad = False
+
+                else:
+                    for param in self.model.parameters():
+                        param.requires_grad = True
 
                 self.model.add_module(
                     "classifier", torch.nn.Linear(in_features, num_classes)
@@ -201,8 +206,8 @@ class FineTuneModule(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
         # make sure we didn't change the pretrained weights
-        if self.pretrained_file is not None:
-            validate_pretrained_model(self.model.state_dict(), self.pretrained_file)
+        # if self.pretrained_file is not None:
+        #     validate_pretrained_model(self.model.state_dict(), self.pretrained_file)
 
         auc_vals = []
         for i, path in enumerate(self.val_pathology_list):
@@ -236,18 +241,19 @@ class FineTuneModule(pl.LightningModule):
         self.log("val_metrics/auc_mean", sum(auc_vals) / len(auc_vals))
 
     def configure_optimizers(self):
-        if self.pretrained_file is None:
-            model = self.model
-        else:
-            if hasattr(self.model, "classifier"):
-                model = self.model.classifier
-            elif hasattr(self.model, "fc"):
-                model = self.model.fc
-            else:
-                raise RuntimeError("Unrecognized classifier.")
+        # if self.pretrained_file is None:
+        #     model = self.model
+        # else:
+        #     if hasattr(self.model, "classifier"):
+        #         model = self.model.classifier
+        #     elif hasattr(self.model, "fc"):
+        #         model = self.model.fc
+        #     else:
+        #         raise RuntimeError("Unrecognized classifier.")
 
-        optimizer = torch.optim.Adam(model.parameters(), self.learning_rate)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, self.epochs)
+        # optimizer = adabound.AdaBound(self.model.parameters(), lr=self.learning_rate, final_lr=0.1)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=.2)
 
         return [optimizer], [scheduler]
 
@@ -256,10 +262,10 @@ class FineTuneModule(pl.LightningModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
 
         parser.add_argument("--arch", default="densenet121", type=str)
-        parser.add_argument("--num_classes", default=14, type=int)
+        parser.add_argument("--num_classes", default=1, type=int)
         parser.add_argument("--pretrained_file", default=None, type=str)
         parser.add_argument("--val_pathology_list", nargs="+")
-        parser.add_argument("--learning_rate", default=1e-2, type=float)
+        parser.add_argument("--learning_rate", default=1e-3, type=float)
         parser.add_argument("--pos_weights", default=None, type=float)
         parser.add_argument("--linear", default=False, action='store_true')
 

@@ -31,6 +31,7 @@ from data.xray_module import XrayDataModule
 from torchvision import transforms
 
 from finetune_moco import FineTuneModule
+import wandb
 
 
 def build_args(arg_defaults=None):
@@ -40,7 +41,7 @@ def build_args(arg_defaults=None):
         "accelerator": "ddp",
         "batch_size": 64,
         "max_epochs": 50,
-        "gpus": 1,
+        "gpus": [0],
         "num_workers": 64,
         "callbacks": [],
     }
@@ -52,6 +53,7 @@ def build_args(arg_defaults=None):
     # ------------
     parser = ArgumentParser()
     parser.add_argument("--im_size", default=224, type=int)
+    parser.add_argument("--gpu_num", default=0, type=int)
     parser.add_argument("--run_name", default=None, type=str)
     parser.add_argument("--uncertain_label", default=np.nan, type=float)
     parser.add_argument("--nan_label", default=np.nan, type=float)
@@ -62,6 +64,7 @@ def build_args(arg_defaults=None):
     parser = FineTuneModule.add_model_specific_args(parser)
     parser.set_defaults(**arg_defaults)
     args = parser.parse_args()
+    args.gpus = [args.gpu_num]
 
     if args.default_root_dir is None:
         args.default_root_dir = Path.cwd()
@@ -87,13 +90,14 @@ def build_args(arg_defaults=None):
             raise ValueError("Unrecognized path config.")
 
     if args.dataset_name in ("chexpert", "mimic", "mimic-chexpert"):
-        args.val_pathology_list = [
-            "Atelectasis",
-            "Cardiomegaly",
-            "Consolidation",
-            "Edema",
-            "Pleural Effusion",
-        ]
+        args.val_pathology_list = ['Pneumonia']
+        # args.val_pathology_list = [
+        #     "Atelectasis",
+        #     "Cardiomegaly",
+        #     "Consolidation",
+        #     "Edema",
+        #     "Pleural Effusion",
+        # ]
     elif args.dataset_name == "nih":
         args.val_pathology_list = [
             "Atelectasis",
@@ -134,8 +138,9 @@ def build_args(arg_defaults=None):
         if ckpt_list:
             args.resume_from_checkpoint = str(ckpt_list[-1])
 
-    args.callbacks.append(
-        pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir, verbose=True)
+    args.callbacks.extend([
+        pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir, verbose=True),
+        pl.callbacks.LearningRateMonitor(logging_interval='epoch')]
     )
 
     return args

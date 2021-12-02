@@ -86,36 +86,40 @@ class CheXpertDataset(BaseDataset):
                 "split {} not recognized for dataset {}, "
                 "not returning samples".format(split, self.__class__.__name__)
             )
-
         self.csv = self.preproc_csv(self.csv, self.subselect)
         self.csv = self.filter_csv(self.csv)
 
     @staticmethod
     def default_labels() -> List[str]:
-        return [
-            "No Finding",
-            "Enlarged Cardiomediastinum",
-            "Cardiomegaly",
-            "Lung Opacity",
-            "Lung Lesion",
-            "Edema",
-            "Consolidation",
-            "Pneumonia",
-            "Atelectasis",
-            "Pneumothorax",
-            "Pleural Effusion",
-            "Pleural Other",
-            "Fracture",
-            "Support Devices",
-        ]
+        return ["Pneumonia"]
+        # [
+        #     "No Finding",
+        #     "Enlarged Cardiomediastinum",
+        #     "Cardiomegaly",
+        #     "Lung Opacity",
+        #     "Lung Lesion",
+        #     "Edema",
+        #     "Consolidation",
+        #     "Pneumonia",
+        #     "Atelectasis",
+        #     "Pneumothorax",
+        #     "Pleural Effusion",
+        #     "Pleural Other",
+        #     "Fracture",
+        #     "Support Devices",
+        # ]
 
-    def preproc_csv(self, csv: pd.DataFrame, subselect: Optional[str]) -> pd.DataFrame:
+    @staticmethod
+    def preproc_csv(csv: pd.DataFrame, subselect: Optional[str]) -> pd.DataFrame:
         if csv is not None:
             # Get the fraction of the database for fine-tuning
-            csv.sample(frac=self.fraction)
+            # csv.sample(frac=self.fraction)
 
             csv["Patient ID"] = csv["Path"].str.extract(pat="(patient\\d+)")
             csv["view"] = csv["Frontal/Lateral"].str.lower()
+
+            csv = csv.dropna(subset=['Pneumonia'])
+            csv = csv[csv.Pneumonia != -1]
 
             if subselect is not None:
                 csv = csv.query(subselect)
