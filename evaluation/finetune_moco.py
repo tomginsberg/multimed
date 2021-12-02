@@ -78,6 +78,16 @@ class FineTuneModule(pl.LightningModule):
             #     download_model(url, self.pretrained_file)
 
             pretrained_dict = torch.load(self.pretrained_file)["state_dict"]
+            if "model.encoder_q.classifier.0.weight" in pretrained_dict.keys():
+                pretrained_dict["model.encoder_q.classifier.weight"] = pretrained_dict["model.encoder_q.classifier.0.weight"]
+                del pretrained_dict["model.encoder_q.classifier.0.weight"]
+
+                pretrained_dict["model.encoder_q.classifier.bias"] = pretrained_dict["model.encoder_q.classifier.0.bias"]
+                del pretrained_dict["model.encoder_q.classifier.0.bias"]
+
+                del pretrained_dict["model.encoder_q.classifier.2.bias"]
+                del pretrained_dict["model.encoder_q.classifier.2.weight"]
+
             state_dict = {}
             for k, v in pretrained_dict.items():
                 if k.startswith("model.encoder_q."):
