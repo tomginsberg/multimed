@@ -134,6 +134,8 @@ class MimicCxrJpgDataset(BaseDataset):
 
             csv["view"] = csv.ViewPosition.apply(format_view)
 
+            csv = csv.dropna(subset=['Pneumonia'])
+            csv = csv[csv['Pneumonia'] != -1]
             if subselect is not None:
                 csv = csv.query(subselect)
 
