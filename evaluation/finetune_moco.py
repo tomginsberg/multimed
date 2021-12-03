@@ -234,6 +234,7 @@ class FineTuneModule(pl.LightningModule):
         #     validate_pretrained_model(self.model.state_dict(), self.pretrained_file)
 
         auc_vals = []
+        pr_auc_vals = []
         for i, path in enumerate(self.val_pathology_list):
             logits = []
             targets = []
@@ -255,6 +256,14 @@ class FineTuneModule(pl.LightningModule):
             except ValueError:
                 auc_val = 0
 
+            try:
+                pr = torchmetrics.PrecisionRecallCurve(num_classes=1) # Change the number of classes if the num of classes > 1
+                precision, recall, threshold = pr(torch.sigmoid(logits), targets.int())
+                pr_auc_val = torch.functional.auc(precision, recall, reorder=True)
+                pr_auc_vals.append(pr_auc_val)
+            except:
+                pr_auc_val = 0
+
             print(f"path: {path}, auc_val: {auc_val}")
 
             self.log(
@@ -273,6 +282,7 @@ class FineTuneModule(pl.LightningModule):
             self.val_f1[i].reset()
 
             self.log(f"val_metrics/auc_{path}", auc_val)
+            self.log("val_metrics/pr_auc", pr_auc_val)
 
             cf = self.val_conf[i].compute()
             self.val_conf[i].reset()
