@@ -54,7 +54,7 @@ class FineTuneModule(pl.LightningModule):
             pos_weights=None,
             epochs=5,
             linear=False,
-            extend_embed_size: int = None,
+            extend_embed_size: int = 16,
     ):
         super().__init__()
 
@@ -106,9 +106,9 @@ class FineTuneModule(pl.LightningModule):
                     for param in self.model.parameters():
                         param.requires_grad = True
 
-                # self.model.add_module(
-                #     "classifier", torch.nn.Linear(in_features, num_classes)
-                # )
+                self.model.add_module(
+                    "classifier", torch.nn.Linear(in_features, in_features)
+                )
             elif "model.encoder_q.fc.weight" in pretrained_dict.keys():
                 feature_dim = pretrained_dict["model.encoder_q.fc.weight"].shape[0]
                 in_features = pretrained_dict["model.encoder_q.fc.weight"].shape[1]
@@ -150,7 +150,7 @@ class FineTuneModule(pl.LightningModule):
             self.model.eval()
 
     def forward(self, image, features):
-        return self.last_linear(torch.cat((self.model(image), features), dim=-1))
+        return self.last_linear(torch.cat((self.model(image), features.float()), dim=-1))
 
     def loss(self, output, target):
         counts = 0
