@@ -32,7 +32,7 @@ from torchvision import transforms
 
 from finetune_moco import FineTuneModule
 import wandb
-
+from torchvision.models import densenet121
 
 def build_args(arg_defaults=None):
     data_config = Path.cwd() / "configs/data.yaml"
@@ -139,7 +139,7 @@ def build_args(arg_defaults=None):
             args.resume_from_checkpoint = str(ckpt_list[-1])
 
     args.callbacks.extend([
-        pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir, verbose=True),
+        pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir, verbose=True, monitor='val_metrics/auc_Pneumonia', mode='max', save_top_k=3),
         pl.callbacks.LearningRateMonitor(logging_interval='epoch')]
     )
 

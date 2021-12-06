@@ -10,6 +10,7 @@ from argparse import ArgumentParser
 import pytorch_lightning as pl
 import torch
 import torchmetrics
+import torchvision
 import torchvision.models as models
 
 # import adabound
@@ -102,9 +103,9 @@ class FineTuneModule(pl.LightningModule):
                     "model.encoder_q.classifier.weight"
                 ].shape[1]
 
-                self.model = models.__dict__[arch](num_classes=feature_dim)
-                # self.model = torchvision.models.densenet121(pretrained=True)
-                self.model.load_state_dict(state_dict)
+                # self.model = models.__dict__[arch](num_classes=feature_dim)
+                self.model = torchvision.models.densenet121(pretrained=True)
+                # self.model.load_state_dict(state_dict)
                 del self.model.classifier
 
                 # Linear layer fine-tuning if self.linear = True, else end-to-end fine tuning
@@ -248,7 +249,7 @@ class FineTuneModule(pl.LightningModule):
 
             self.val_acc[i](logits, targets.int())
             self.val_conf[i](logits, targets.int())
-            self.val_f1[i].update(logits, targets.int())
+            self.val_f1[i](logits, targets.int())
 
             try:
                 auc_val = torchmetrics.functional.auroc(torch.sigmoid(logits), targets.int(), pos_label=1)
